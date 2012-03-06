@@ -1,0 +1,23 @@
+version=0.2
+name=kvm-manager-$(version)
+buildroot=/tmp/build/$(name)
+
+all:
+	rm -fr $(buildroot) 
+	ls $(buildroot) || git clone . $(buildroot)
+	cd $(buildroot) && git pull
+	cd $(buildroot) && rm -r .git
+	cd $(buildroot) && rm -r gentoo
+	cd $(buildroot) && aclocal
+	cd $(buildroot) && autoconf -i
+	cd $(buildroot) && automake --add-missing
+	cd $(buildroot) && autoreconf
+	cd $(buildroot) && cd .. && tar cjf $(name).tar.bz2 $(name)
+	cd $(buildroot) && ./configure --prefix $(buildroot)/test
+	cd $(buildroot) && make install
+	$(MAKE) -f Makefile.default ebuild
+
+ebuild:
+	cp $(buildroot).tar.bz2 gentoo/kvm-manager/distfiles
+	cd gentoo/kvm-manager/sys-libs/kvm-manager/ && rm Manifest || echo 1
+	cd gentoo/kvm-manager/sys-libs/kvm-manager/ && ebuild *.ebuild digest

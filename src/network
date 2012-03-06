@@ -1,0 +1,72 @@
+#!/bin/bash
+# kvm-network(kvm) 0.1: kvm-tools network module.
+
+SCRIPT_NAME="kvm-network"
+SCRIPT_PACKAGE="kvm-tools"
+SCRIPT_VERSION="0.1"
+SCRIPT_PREFIX="kvm"
+SCRIPT_DESCRIPTION="create command line parameters for kv machine network"
+SCRIPT_API="1"
+
+. bash_include     # load include function
+include basic      # include related stuff, required by SCRIPT_API = 1
+include var
+include kvm/macgen
+
+module_begin "${@}"
+
+kvm_parameter_network()
+{
+	local vlan
+	local script
+	local device
+	local device_name
+	local device_type
+	local ifname
+	local model
+	local socket
+	local macaddr
+	local vlan_id
+
+	for vlan in ${!vlan@}; do
+		case "${vlan}" in
+			'vlan'[0-9]|'vlan'[0-9][0-9])
+				vlan_id="${vlan#vlan}"
+			;;
+			*)
+				continue;
+			;;
+		esac
+
+		for device in $(@ ${vlan}[@]); do
+			device_name="$(@ ${device}_name:-${device})"
+			device_type="$(@ ${device}_type:-nic)"
+
+			case "${device_type}" in
+				tap)
+					if [ $(@ ${device}_bridge:+set) ]; then
+						script="kvm-ifup-$(@ ${device}_bridge)"
+					else
+						script="kvm-ifup-nobridge"
+					fi
+					ifname="$(@ ${device}_ifname:-"${name// /}.${device}")"
+					kvm_parameter=( "${kvm_parameter[@]}" -net "tap,vlan=${vlan_id},script=/etc/kvm/${script},name=${device_name},ifname=${ifname}" )
+				;;
+				vde)
+					socket="$(@ "${device}_socket:?socket required for vde device")"
+					kvm_parameter=( "${kvm_parameter[@]}" -net "vde,vlan=${vlan_id},sock=${socket},name=${device_name}" )
+				;;
+				nic)
+					model="$(@ ${device}_model:-e1000)"
+					macaddr="$(@ ${device}_macaddr:-$(kvm_name2macaddr "${name}${vlan_id}${device_name}"))"
+					kvm_parameter=( "${kvm_parameter[@]}" -net "nic,vlan=${vlan_id},macaddr=${macaddr},model=${model},name=${device_name}" )
+				;;
+				*)
+					continue
+				;;
+			esac
+		done
+	done
+}
+
+module_end "${@}"

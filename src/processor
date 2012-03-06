@@ -1,0 +1,67 @@
+#!/bin/bash
+# kvm-processor(kvm) 0.1: kvm-tools processor module.
+
+SCRIPT_NAME="kvm-processor"
+SCRIPT_PACKAGE="kvm-tools"
+SCRIPT_VERSION="0.1"
+SCRIPT_PREFIX="kvm"
+SCRIPT_DESCRIPTION="channels the vm processors into a single hub"
+SCRIPT_API="1"
+
+. bash_include     # load include function
+include basic      # include related stuff, required by SCRIPT_API = 1
+include var
+
+module_begin "${@}"
+
+kvm_processor_auto_affinity()
+{
+	# this might be replaced by some nifty calculation involving the values
+	# in /sys/devices/system/cpu
+	# right now it hopefuly does the RightThing(TM) for my quad-core ht box.
+	printf '%s\n' "$(( ( (${1} % 4) * 2 ) + ((${1} % 8) / 4) ))"
+}
+
+kvm_set_processor_options()
+{
+	local IFS
+	local cpuinfo
+	local cpuinfo_line
+	local number
+	local affinity
+	local niceness
+
+	if [ ! ${monitor_port:+set} ]; then
+		return
+	fi
+
+	cpuinfo="$(printf 'info cpus\n' | nc -q 1 localhost "${monitor_port}" |grep -a 'CPU #')"
+
+	IFS=$'\n\r'
+	for cpuinfo_line in ${cpuinfo}; do
+		number="${cpuinfo_line:7:2}"
+		number="${number%:}"
+		local pid
+		pid="${cpuinfo_line#*thread_id=}"
+		if var_not_empty "cpu${number}_affinity"; then
+			affinity="$(@ "cpu${number}_affinity")"
+		else
+			affinity="${cpus_affinity:-none}"
+		fi
+
+		if [ "|${affinity}" == "|auto" ]; then
+			affinity=$(kvm_processor_auto_affinity $number);
+		fi
+
+		if [ "|${affinity:-none}" != "|none" ]; then
+			taskset -pc "${affinity}" "${pid}" 1>/dev/null
+		fi
+
+		niceness="$(@ "cpu${number}_niceness":-'${cpus_niceness:-none}')"
+		if [ "|${niceness}" != "|none" ]; then
+			renice ${niceness} -p "${pid}" 1>/dev/null
+		fi
+	done
+}
+
+module_end "${@}"

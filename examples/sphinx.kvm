@@ -1,0 +1,42 @@
+#!/usr/local/bin/kvm-manager
+#
+
+name='sphinx'
+smp=2
+mem=1G
+localtime=yes
+
+cpus_affinity=auto
+
+monitor=hub
+vnc=:21
+
+kvm_net_type=tap
+kvm_net_ifname=kvm.sphinx
+kvm_net_bridge=kvm.br
+nic0_macaddr="$(kvm_ip2macaddr 192.168.0.221)"
+vlan0=( kvm_net nic0 )
+
+psy_net_type=tap
+psy_net_ifname=psy.sphinx
+psy_net_bridge=psy.br
+nic1_macaddr="$(kvm_ip2macaddr 192.168.1.221)"
+vlan1=( psy_net nic1 )
+
+iscsi_net_type=tap
+iscsi_net_ifname=iscsi.sphinx
+iscsi_net_bridge=iscsi.br
+nic2_macaddr="$(kvm_ip2macaddr 192.168.2.221)"
+vlan2=( iscsi_net nic2 )
+
+cdrom_media=cdrom
+
+sphinx_system=/dev/deepspace/sphinx-system
+sphinx_system_media=disk
+sphinx_system_cache=none
+sphinx_system_boot=on
+
+ide0=( sphinx_system [2]=cdrom )
+
+# disabled because of scsi timeouts on windows (use iscsi instead)
+scsi0=( )

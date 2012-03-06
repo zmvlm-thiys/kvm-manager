@@ -1,0 +1,41 @@
+#!/usr/local/bin/kvm-manager
+#
+
+name='build-debian32'
+smp=2
+mem=512M
+
+monitor=hub
+vnc=:71
+
+cpus_affinity=none
+
+# network
+
+kvm_net_type=tap
+kvm_net_ifname=kvm.builddebian32
+kvm_net_bridge=kvm.br
+
+vlan0=( kvm_net nic0 )
+
+
+hdd0=/dev/deepspace/build-debian32-system
+hdd0_media=disk
+hdd0_cache=none
+hdd0_boot=off
+
+#should not need local storage (more than temporary)
+hdd1=/dev/deepspace/build-debian32-data
+hdd1_media=disk
+hdd1_cache=none
+
+
+#cdrom=/root/debian-506-i386-netinst.iso
+#cdrom_media=cdrom
+#cdrom_boot=on
+
+#kernel=/root/bzImage
+#kernel_cmdline="root=/dev/vda"
+
+ide0=( hdd0 hdd1)
+ide1=( cdrom )

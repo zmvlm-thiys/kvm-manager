@@ -1,0 +1,51 @@
+#!/bin/bash
+# kvm-monitor(kvm) 0.1: kvm-tools monitor module.
+
+SCRIPT_NAME="kvm-monitor"
+SCRIPT_PACKAGE="kvm-tools"
+SCRIPT_VERSION="0.1"
+SCRIPT_PREFIX="kvm"
+SCRIPT_DESCRIPTION="channels the vm monitors into a single hub"
+SCRIPT_API="1"
+
+. bash_include     # load include function
+include basic      # include related stuff, required by SCRIPT_API = 1
+include var
+
+module_begin "${@}"
+
+var_script_init MONITOR_PORTBASE 4500
+var_script_init MONITOR_HUB      kvm-monitor
+
+kvm_find_monitor_port()
+{
+	local i
+	local port
+	for (( i = 0; 1; i++ )); do
+		port="$(( kvm_MONITOR_PORTBASE + i ))"
+		lsof -n -i ":${port}" |grep -q '(LISTEN)$' ||
+			break
+	done
+	printf '%s\n' "${port}"
+}
+
+kvm_parameter_monitor()
+{
+	case "${monitor:-telnet}" in
+		'telnet'|'hub')
+			monitor_port="${monitor_port:-$(kvm_find_monitor_port)}"
+			kvm_parameter=( "${kvm_parameter[@]}" -monitor "telnet:localhost:${monitor_port},server,nowait" )
+		;;
+	esac
+}
+
+kvm_connect_monitor_hub()
+{
+	if [ "|${monitor:-telnet}" == "|hub" ]; then
+		which screen 2>/dev/null && screen -S "${kvm_MONITOR_HUB}" -X screen -t "$name" -a plink -telnet localhost -P "${monitor_port}"
+		which tmux 2>/dev/null && tmux new-window -t "${kvm_MONITOR_HUB}:" -n "${name}" plink -telnet localhost -P "${monitor_port}" 
+		echo "$ plink -telnet localhost -P "${monitor_port} # will give you a console to this machine"
+	fi
+}
+
+module_end "${@}"

@@ -1,0 +1,43 @@
+#!/usr/local/bin/kvm-manager
+#
+
+name='squealer'
+smp=2
+mem=1G
+localtime=yes
+
+cpus_affinity=auto
+
+monitor=hub
+vnc=:22
+
+kvm_net_type=tap
+kvm_net_ifname=kvm.squealer
+kvm_net_bridge=kvm.br
+nic0_macaddr="$(kvm_ip2macaddr 192.168.0.222)"
+vlan0=( kvm_net nic0 )
+
+psy_net_type=tap
+psy_net_ifname=psy.squealer
+psy_net_bridge=psy.br
+nic1_macaddr="$(kvm_ip2macaddr 192.168.1.222)"
+vlan1=( psy_net nic1 )
+
+iscsi_net_type=tap
+iscsi_net_ifname=iscsi.squealer
+iscsi_net_bridge=iscsi.br
+nic2_macaddr="$(kvm_ip2macaddr 192.168.2.222)"
+vlan2=( iscsi_net nic2 )
+
+cdrom_media=cdrom
+cdrom_bood=on
+
+squealer_system=/dev/deepspace/squealer-system
+squealer_system_media=disk
+squealer_system_cache=none
+squealer_system_boot=on
+
+ide0=( squealer_system [2]=cdrom )
+
+# disabled because of scsi timeouts on windows (use iscsi instead)
+scsi0=( )

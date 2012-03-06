@@ -1,0 +1,76 @@
+#!/bin/bash
+# kvm-macgen(kvm) 0.1: functions to generate mac addresses for virtual nics.
+
+# by convention macaddr should equal 52:54:hex(virtual server ip)
+# (see superconductor:/etc/dhcp/dhcpd.conf)
+# 192.168.0.0 ~= 52:54:C0:A8:00:00
+# 10.0.0.0    ~= 52:54:0A:00:00:00
+#
+# another option would be to generate the mac address from the machine name by
+# appending 00:hex(first three bytes of md5sum(name)).
+#
+# okay, here is a small set of functions to do that:
+# 	x2macaddr:    generates mac address from $1 depending on $1's format
+# 	ip2macaddr:   generates mac address from an ip address
+# 	name2macaddr: generates mac address from a name
+
+SCRIPT_NAME="kvm-macgen"
+SCRIPT_PACKAGE="kvm-tools"
+SCRIPT_VERSION="0.1"
+SCRIPT_PREFIX="kvm"
+SCRIPT_DESCRIPTION="functions to generate mac addresses for virtual nics."
+SCRIPT_API="1"
+
+. bash_include     # load include function
+include basic      # include related stuff, required by SCRIPT_API = 1
+include var
+
+module_begin "${@}"
+
+# global variables and constants:
+var_script_init MACADDR_PREFIX "52:54" # the first two bytes of the mac address.
+                                       # has to be in the form of "hh:hh" where
+				       # h denote a hexadezimal digit
+
+# x2macaddr:
+# generates mac address from $1
+# calls ip2macaddr if $1 containa a valid, normalized ip address
+# calls name2macaddr otherwise.
+kvm_x2macaddr()
+{
+    ip="$(
+	printf '%s\n' "$1" |
+	    sed -rn '
+		s/((^|\.)0*([0-9])(\.|$))/\2\3\4/g
+		/^([1-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])(\.([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])){3,3}$/ p
+	    '
+    )"
+    if [ ${ip:+set} ]; then
+        ip2macaddr "$ip"
+    else
+	name2macaddr "$1"
+    fi
+}
+
+# ip2macaddr:
+# generates mac address from an ip address
+# $1 must contain a valid, normalized ip address
+# prints a mac address to stdout.
+kvm_ip2macaddr()
+{
+    local IFS="."
+    set -- $1
+    printf '%s:%02X:%02X:%02X:%02X\n' "${kvm_MACADDR_PREFIX}" "$@"
+}
+
+# name2macaddr:
+# generates mac address from a name
+# $1 may contain an arbitrary string
+# prints a mac address to stdout.
+kvm_name2macaddr()
+{
+    md5="$(printf '%s\n' "$1" |md5sum | sed 'y/abcdef/ABCDEF/')"
+    printf '%s:00:%s:%s:%s\n' "${kvm_MACADDR_PREFIX}" "${md5:0:2}" "${md5:2:2}" "${md5:4:2}"
+}
+
+module_end "${@}"

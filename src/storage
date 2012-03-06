@@ -1,0 +1,75 @@
+#!/bin/bash
+# kvm-storage(kvm) 0.1: kvm-tools storage module.
+
+# functions:
+#	kvm_parameter_storage: parses the storage bus definitions in a .kvm
+#		file and generates the corresponding kvm command line parameters.
+
+SCRIPT_NAME="kvm-storage"
+SCRIPT_PACKAGE="kvm-tools"
+SCRIPT_VERSION="0.1"
+SCRIPT_PREFIX="kvm"
+SCRIPT_DESCRIPTION="create command line parameters for kvm disks"
+SCRIPT_API="1"
+
+. bash_include     # load include function
+include basic      # include related stuff, required by SCRIPT_API = 1
+include var
+
+module_begin "${@}"
+
+kvm_parameter_storage()
+{
+	local channel
+	local lun
+	local path
+	local device
+	local file
+	local media
+	local cache
+	local format
+	local boot_device
+	
+	cdrom_media=cdrom
+	
+	for channel in floppies ide0 ide1 ${!scsi@} virtio; do
+		for lun in $(@ !${channel}[@]); do
+			device=$(@ ${channel}[lun])
+			file="$(@ ${device})"
+			media="$(@ ${device}_media:-disk)"
+			cache="$(@ ${device}_cache:-none)"
+			format="$(@ ${device}_format:-raw)"
+			echo "${boot} --- ${device}"
+			if [ "|${boot}" == "|${device}" ]; then
+				boot_device=true
+			else
+				boot_device=
+			fi
+
+			case "${channel}" in
+				ide[01])
+					(( lun > 1 )) &&
+						break;
+					path="if=ide,index=$(( ${channel:3:1}*2 + lun ))"
+				;;
+				'scsi'[0-9]|'scsi'[0-9][0-9])
+					(( lun > 15 )) &&
+						break;
+					path="if=scsi,bus=${channel:4},unit=${lun}"
+				;;
+				floppies)
+					path="if=floppy,index=${lun}"
+				;;
+				virtio)
+					path="if=virtio,index=${lun}"
+				;;
+				*)
+					continue;
+				;;
+			esac
+			kvm_parameter=( "${kvm_parameter[@]}" -drive "${path},${!device:+file=${!device//,/,,},}format=${format},media=${media},cache=${cache}${boot_device:+,boot=on}" )
+		done
+	done
+}
+
+module_end "${@}"

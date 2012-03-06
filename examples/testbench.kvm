@@ -1,0 +1,49 @@
+#!/usr/bin/kvm-manager
+#
+
+name='testbench'
+smp=1
+mem=256M
+
+monitor=hub
+vnc=:52
+
+cpus_affinity=none
+
+# network
+kvm_net_type=nic
+kvm_net_ifname=kvm.tb
+kvm_net_bridge=kvm.br
+
+psy_net_type=nic
+psy_net_ifname=psy.tb
+psy_net_bridge=psy.br
+
+
+vlan0=( kvm_net nic0 )
+vlan1=( psy_net nic1 )
+
+cdrom=/mnt/net/hafgufa/data-nebula/disc0
+cdrom_media=cdrom
+
+dosimg=/mnt/net/hafgufa/data-nebula/dos,img
+dosimg_cache=writeback
+winimg=/mnt/net/hafgufa/data-nebula/win,img
+winimg_cache=writeback
+linimg=/mnt/net/hafgufa/data-nebula/lin,img
+linimg_cache=writeback
+
+hdd0=/dev/deepspace/l26bench-system
+hdd0_media=disk
+hdd0_cache=none
+hdd0_boot=on
+
+hdd1=/mnt/net/hafgufa/data-nebula/disc0
+hdd1_media=disk
+hdd1_cache=writeback
+
+kernel=/root/bzImage
+kernel_cmdline="root=/dev/sda"
+
+scsi0=( hdd0 )
+# floppies=( dosimg winimg [200]=linimg )

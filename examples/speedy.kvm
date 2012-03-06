@@ -1,0 +1,50 @@
+#!/usr/local/bin/kvm-manager
+#
+
+name='speedy'
+smp=4
+mem=1G
+localtime=yes
+
+cpus_affinity=auto
+
+monitor=hub
+vnc=:54
+
+kvm_net_type=tap
+kvm_net_ifname=kvm.speedy
+kvm_net_bridge=kvm.br
+nic0_macaddr="$(kvm_ip2macaddr 192.168.0.223)"
+vlan0=( kvm_net nic0 )
+
+psy_net_type=tap
+psy_net_ifname=psy.speedy
+psy_net_bridge=psy.br
+nic1_macaddr="$(kvm_ip2macaddr 192.168.1.223)"
+vlan1=( psy_net nic1 )
+
+iscsi_net_type=tap
+iscsi_net_ifname=iscsi.speedy
+iscsi_net_bridge=iscsi.br
+nic2_macaddr="$(kvm_ip2macaddr 192.168.2.223)"
+vlan2=( iscsi_net nic2 )
+
+cdrom_media=cdrom
+
+speedy_system=/dev/deepspace/speedy-system
+speedy_system_media=disk
+speedy_system_cache=none
+speedy_system_boot=on
+
+
+speeddisk_nebula=/dev/deepspace/speeddisk-nebula
+speeddisk_nebula_media=disk
+speeddisk_nebula_cache=none
+
+ide0=( [2]=cdrom )
+
+# disabled because of scsi timeouts on windows (use iscsi instead)
+scsi0=( )
+
+virtio=( speedy_system )
+boot=speedy_system

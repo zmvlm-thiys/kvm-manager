@@ -1,0 +1,89 @@
+#!/bin/bash
+# kvm-manager(kvm> 0.1: tool to manage kv machines in an easy accessible format.
+SCRIPT_NAME="kvm-manager"
+SCRIPT_PACKAGE="kvm-tools"
+SCRIPT_VERSION="0.1"
+SCRIPT_DESCRIPTION="tool to manage kv machines in an easy accessible format."
+SCRIPT_API="1"
+
+. bash_include        # load include function
+include basic         # include related stuff, required by SCRIPT_API = 1
+include opt           # option parsing comfort
+include err           # error codes
+include msg           # message helper
+include kvm/network   # kvm net component
+include kvm/storage   # kvm storage bus component
+include kvm/macgen    # kvm mac address generator
+include kvm/processor # kvm processor manager
+include kvm/monitor   # kvm monitor multiplexer component 
+
+script_begin "${@}"
+
+error()
+{
+    msg_error "$(err_to_str $1)${2:+: $2}" $1
+}
+
+opt_option_00=(s 'b' 'boot' 'kvm_boot="${parameter}"')
+opt_option_00[opt_HELP]="use device STRING boot device"
+opt_option_01=(s 'c' 'cdrom' 'kvm_cdrom="${parameter}"')
+opt_option_01[opt_HELP]="use file STRING as cdrom image/device"
+opt_option_02=(s 'f' 'floppy' 'kvm_floppy="${parameter}"')
+opt_option_02[opt_HELP]="use file STRING as floppy image/device"
+
+opt_option_help=(b "h?" "help"            'opt_show_help; exit')
+opt_option_help[opt_HELP]="shows this text and exits."
+
+opt_additional_usage="virtual_machine_file"
+
+main()
+{
+	opt_get "$@"
+
+	if (( opt_no_opt_count != 1 )); then
+		msg_panic=false error $err_INVAL
+		opt_show_usage
+		return
+	fi
+	source "${opt_no_options}" ||
+		return
+
+	var_not_empty name ||
+		return
+
+	kvm_parameter=( "${kvm_parameter[@]}" -name "${name}" -smp "${smp:-1}" -m "${mem:-512M}" )
+	if [ "|${localtime}" == "|yes" ]; then
+		kvm_parameter=( "${kvm_parameter[@]}" -localtime )
+	fi
+	if [ ${kernel:+set} ]; then
+		kvm_parameter=( "${kvm_parameter[@]}" -kernel "${kernel}" )
+		if [ ${kernel_cmdline:+set} ]; then
+			kvm_parameter=( "${kvm_parameter[@]}" -append "${kernel_cmdline}" )
+		fi
+	fi
+	if [ ${vnc:+set} ]; then
+		kvm_parameter=( "${kvm_parameter[@]}" -vnc "${vnc}" )
+		echo "$ vncviewer ${vnc} # will connect to the display"
+	else
+		kvm_parameter=( "${kvm_parameter[@]}" -nographic )
+	fi
+
+	cdrom="${kvm_cdrom:-${cdrom}}"
+	boot="${kvm_boot:-${boot}}"
+	kvm_parameter_storage
+	kvm_parameter_network
+	kvm_parameter_monitor
+
+	kvm_parameter=( "${kvm_parameter[@]}" -daemonize )
+	kvm_parameter=( "${kvm_parameter[@]}" -k en-us )
+	kvm_parameter=( "${kvm_parameter[@]}" -usb -usbdevice tablet )
+
+	echo kvm "${kvm_parameter[@]}"
+	kvm "${kvm_parameter[@]}" ||
+		return
+
+	kvm_set_processor_options
+	kvm_connect_monitor_hub
+}
+
+script_end "${@}"

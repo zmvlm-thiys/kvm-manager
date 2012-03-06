@@ -1,0 +1,46 @@
+#!/usr/local/bin/kvm-manager
+#
+
+name='hafgufa'
+smp=2
+mem=512M
+
+monitor=hub
+vnc=:12
+# was 3
+
+kvm_net_type=tap
+kvm_net_ifname=kvm.hafgufa
+kvm_net_bridge=kvm.br
+eth0_macaddr="$(kvm_ip2macaddr 192.168.0.200)"
+vlan0=( kvm_net eth0 )
+
+psy_net_type=tap
+psy_net_ifname=psy.hafgufa
+psy_net_bridge=psy.br
+eth1_macaddr="$(kvm_ip2macaddr 192.168.1.200)"
+vlan1=( psy_net eth1 )
+
+iscsi_net_type=tap
+iscsi_net_ifname=iscsi.hafgufa
+iscsi_net_bridge=iscsi.br
+eth2_macaddr="$(kvm_ip2macaddr 192.168.2.200)"
+vlan2=( iscsi_net eth2 )
+
+hdd0=/dev/deepspace/hafgufa-system
+hdd0_media=disk
+hdd0_cache=none
+
+hdd1=/dev/deepspace/data-nebula
+hdd1_media=disk
+hdd1_cache=none
+
+hdd2=/dev/deepspace/project-nebula
+hdd2_media=disk
+hdd2_cache=none
+
+scsi0=( )
+virtio=( hdd0 hdd1 hdd2 )
+
+kernel=/root/bzImage
+kernel_cmdline="root=/dev/vda"

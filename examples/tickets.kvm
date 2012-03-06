@@ -1,0 +1,36 @@
+#!/usr/bin/kvm-manager
+#
+
+name='tickets'
+smp=2
+mem=512M
+
+monitor=hub
+vnc=:14
+
+cpus_affinity=none
+
+# network
+
+kvm_net_type=nic
+kvm_net_ifname=kvm.tickets
+kvm_net_bridge=kvm.br
+
+vlan0=( kvm_net nic0 )
+
+
+hdd0=/data/more/vm-114-disk-1.qcow2
+hdd0_format=qcow2
+hdd0_media=disk
+hdd0_cache=none
+hdd0_boot=on
+
+#cdrom=/root/livecd.iso
+#cdrom_media=cdrom
+#cdrom_boot=on
+
+#kernel=/root/bzImage
+#kernel_cmdline="root=/dev/vda"
+
+ide0=( hdd0 )
+ide1=( cdrom )

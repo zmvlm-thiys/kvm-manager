@@ -1,0 +1,24 @@
+#!/usr/local/bin/kvm-manager
+#
+
+name='swisstool'
+smp=2
+mem=1024M
+
+monitor=4323
+vnc=:53
+
+kvm_type=tap
+kvm_bridge=br0
+
+psycho_type=tap
+psycho_bridge=br1
+
+vlan0=( run    nic )
+vlan0=( psycho nic )
+
+hdd0=/dev/deepspace/swisstool-system
+hdd0_media=disk
+hdd0_cache=none
+
+scsi0=( hdd0 )
