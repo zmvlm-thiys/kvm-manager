@@ -4,8 +4,8 @@
 inherit flag-o-matic
 
 DESCRIPTION="Configuration file management for KVM commandline tools"
-HOMEPAGE="http://struction.de/kvm-config"
-SRC_URI="http://struction.de/kvm-config/${PV}/${P}.tar.bz2"
+HOMEPAGE="http://struction.de/kvm-manager"
+SRC_URI="http://struction.de/kvm-manager/${PV}/${P}.tar.bz2"
 
 LICENSE="GPL-2"
 SLOT="0"
